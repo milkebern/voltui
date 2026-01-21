@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volt Music - Dashboard</title>
+    <style>
+        :root {
+            --primary-yellow: #f0db4f;
+            --bg-black: #0a0a0a;
+            --card-grey: #1a1a1a;
+            --text-grey: #b3b3b3;
+            --hover-grey: #282828;
+            --white: #ffffff;
+            --sidebar-width-collapsed: 75px;
+            --sidebar-width-expanded: 240px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            background-color: var(--bg-black);
+            color: var(--white);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Retractable Sidebar --- */
+        nav {
+            width: var(--sidebar-width-collapsed);
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 15px;
+            gap: 25px;
+            border-right: 1px solid #222;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            white-space: nowrap;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        nav:hover {
+            width: var(--sidebar-width-expanded);
+            padding: 20px;
+        }
+
+        .logo {
+            color: var(--primary-yellow);
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .nav-link {
+            color: var(--text-grey);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: 0.2s;
+            cursor: pointer;
+            height: 35px;
+        }
+
+        .nav-link svg {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            fill: currentColor;
+        }
+
+        .nav-link span {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        nav:hover .nav-link span { opacity: 1; }
+        .nav-link:hover, .nav-link.active { color: var(--primary-yellow); }
+
+        /* --- Content Wrapper --- */
+        .content-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* --- Top Navigation / Search --- */
+        header {
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 50;
+        }
+
+        .search-container {
+            position: relative;
+            width: 350px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-container.prominent {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px 45px;
+            border-radius: 25px;
+            border: 1px solid transparent;
+            background-color: var(--card-grey);
+            color: white;
+            outline: none;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .search-container input:focus {
+            border-color: var(--primary-yellow);
+            background-color: #222;
+            box-shadow: 0 0 15px rgba(240, 219, 79, 0.1);
+        }
+
+        .search-container svg {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            fill: var(--text-grey);
+        }
+
+        /* --- Main Scrollable Area --- */
+        main {
+            flex-grow: 1;
+            overflow-y: auto;
+            background: linear-gradient(to bottom, #1a1a10 0%, var(--bg-black) 40%);
+            padding-bottom: 120px;
+            display: block;
+        }
+
+        .view { display: none; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        section { margin-bottom: 40px; padding: 0 30px; }
+        h2 { margin-bottom: 20px; font-size: 1.5rem; border-left: 4px solid var(--primary-yellow); padding-left: 15px; }
+
+        /* --- Library View Styles --- */
+        .library-hero {
+            padding: 60px 30px 30px 30px;
+            display: flex;
+            align-items: flex-end;
+            gap: 25px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.5));
+        }
+
+        .liked-heart-big {
+            width: 180px;
+            height: 180px;
+            background: linear-gradient(135deg, #450af5, #c4efd9);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .song-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .song-table th {
+            text-align: left;
+            color: var(--text-grey);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .song-table tr {
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .song-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .song-table td {
+            padding: 12px 10px;
+            font-size: 0.9rem;
+        }
+
+        .track-cell {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .small-art {
+            width: 40px;
+            height: 40px;
+            border-radius: 2px;
+        }
+
+        /* --- Genre Grid (Search Page) --- */
+        .genre-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .genre-card {
+            height: 120px;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .genre-card:hover { transform: scale(1.03); }
+
+        .genre-card h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            z-index: 2;
+            position: relative;
+        }
+
+        .genre-card svg.bg-icon {
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            width: 80px;
+            height: 80px;
+            opacity: 0.2;
+            transform: rotate(25deg);
+        }
+
+        /* Scroll Helpers */
+        .horizontal-scroll {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        .horizontal-scroll::-webkit-scrollbar { height: 6px; }
+        .horizontal-scroll::-webkit-scrollbar-thumb { background: var(--hover-grey); border-radius: 10px; }
+
+        .album-card {
+            min-width: 180px;
+            background-color: var(--card-grey);
+            padding: 15px;
+            border-radius: 8px;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .album-card:hover { background-color: var(--hover-grey); transform: translateY(-5px); }
+        .album-art { width: 100%; aspect-ratio: 1; border-radius: 4px; margin-bottom: 12px; background-color: #333; }
+
+        .podcast-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .podcast-card {
+            background-color: var(--card-grey);
+            display: flex;
+            gap: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            align-items: center;
+            border: 1px solid transparent;
+            transition: 0.2s;
+        }
+        .podcast-card:hover { border-color: var(--primary-yellow); background: #000; }
+        .podcast-img { width: 80px; height: 80px; border-radius: 6px; flex-shrink: 0; background-color: #444; }
+
+        /* --- Player Bar --- */
+        .player-bar {
+            height: 90px;
+            background-color: #121212;
+            border-top: 1px solid #282828;
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            justify-content: space-between;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            z-index: 100;
+        }
+
+        .now-playing { display: flex; align-items: center; width: 30%; gap: 15px; }
+        #current-art { width: 56px; height: 56px; border-radius: 4px; background-color: var(--primary-yellow); transition: 0.3s; }
+
+        .controls { display: flex; flex-direction: column; align-items: center; width: 40%; gap: 8px; }
+        .play-btn {
+            width: 38px; height: 38px; background-color: var(--white);
+            border-radius: 50%; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+        }
+        .play-btn:hover { background-color: var(--primary-yellow); transform: scale(1.1); }
+
+        .progress-bar { width: 100%; height: 4px; background-color: #4f4f4f; border-radius: 2px; position: relative; }
+        .progress-fill { width: 30%; height: 100%; background-color: var(--primary-yellow); border-radius: 2px; }
+
+        .vol-container { width: 30%; display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <nav>
+        <div class="logo">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="var(--primary-yellow)"><path d="M13 10V3L4 14H11V21L20 10H13Z"/></svg>
+            <span>VOLT.</span>
+        </div>
+        
+        <a href="#" class="nav-link active" onclick="navigate('home')">
+            <svg viewBox="0 0 24 24"><path d="M10 20V14H14V20H19V12H22L12 3L2 12H5V20H10Z"/></svg>
+            <span>Home</span>
+        </a>
+        
+        <a href="#" class="nav-link" onclick="navigate('search')">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14H14.71L14.43 13.73C15.41 12.59 16 11.11 16 9.5C16 5.91 13.09 3 9.5 3C5.91 3 3 5.91 3 9.5C3 13.09 5.91 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14L14.29 14.71V15.5L19.25 20.46L20.71 19L15.75 14.04L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z"/></svg>
+            <span>Search</span>
+        </a>
+
+        <a href="#" class="nav-link" onclick="navigate('library')">
+            <svg viewBox="0 0 24 24"><path d="M12 3V13.55C11.41 13.21 10.73 13 10 13C7.79 13 6 14.79 6 17C6 19.21 7.79 21 10 21C12.21 21 14 19.21 14 17V7H18V3H12Z"/></svg>
+            <span>Your Library</span>
+        </a>
+
+        <div style="margin-top: auto; border-top: 1px solid #222; padding-top: 20px;">
+            <a href="#" class="nav-link" id="nav-liked" onclick="navigate('library')">
+                <svg viewBox="0 0 24 24"><path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.03L12 21.35Z"/></svg>
+                <span>Liked Songs</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="content-wrapper">
+        <header>
+            <div class="search-container" id="main-search-bar">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" placeholder="What do you want to listen to?" id="search-input">
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-grey); cursor: pointer;">Support</span>
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-yellow); display: flex; align-items: center; justify-content: center; color: black; font-weight: bold; cursor: pointer;">U</div>
+            </div>
+        </header>
+
+        <main id="scroll-main">
+            <!-- HOME VIEW -->
+            <div id="view-home" class="view active">
+                <section>
+                    <h2>Jump Back In</h2>
+                    <div class="horizontal-scroll" id="suggested-albums"></div>
+                </section>
+
+                <section>
+                    <h2>Podcasts for You</h2>
+                    <div class="podcast-grid" id="podcast-list"></div>
+                </section>
+
+                <section>
+                    <h2>Trending Near You</h2>
+                    <div class="horizontal-scroll" id="trending-feed"></div>
+                </section>
+            </div>
+
+            <!-- SEARCH VIEW -->
+            <div id="view-search" class="view">
+                <section>
+                    <h2>Browse All Genres</h2>
+                    <div class="genre-grid" id="genre-container"></div>
+                </section>
+            </div>
+
+            <!-- LIBRARY VIEW (LIKED SONGS) -->
+            <div id="view-library" class="view">
+                <div class="library-hero">
+                    <div class="liked-heart-big">♥</div>
+                    <div>
+                        <p style="font-size: 0.8rem; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Playlist</p>
+                        <h1 style="font-size: 4rem; margin-bottom: 10px; letter-spacing: -2px;">Liked Songs</h1>
+                        <p style="font-size: 0.9rem;"><strong>User</strong> • 5 songs</p>
+                    </div>
+                </div>
+                
+                <section style="margin-top: 20px;">
+                    <table class="song-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">#</th>
+                                <th>Title</th>
+                                <th>Album</th>
+                                <th style="text-align: right;">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="library-song-list">
+                            <!-- Songs injected via JS -->
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+        </main>
+
+        <!-- PLAYER -->
+        <footer class="player-bar">
+            <div class="now-playing">
+                <div id="current-art"></div>
+                <div class="track-info">
+                    <h4 id="player-title">Welcome to Volt</h4>
+                    <p id="player-artist">Pick a vibe</p>
+                </div>
+            </div>
+            <div class="controls">
+                <div class="play-btn" id="master-play">▶</div>
+                <div style="display: flex; align-items: center; width: 100%; gap: 10px;">
+                    <span style="font-size: 0.7rem; color: var(--text-grey);">0:45</span>
+                    <div class="progress-bar"><div class="progress-fill"></div></div>
+                    <span style="font-size: 0.7rem; color: var(--text-grey);">3:12</span>
+                </div>
+            </div>
+            <div class="vol-container">
+                <span style="color: var(--text-grey);">🔊</span>
+                <div class="progress-bar" style="width: 80px;"><div class="progress-fill" style="width: 80%;"></div></div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Data Definitions
+        const songs = [
+            { id: 1, name: "Electric Dreams", artist: "Flora", album: "Techno Bloom", color: "#f0db4f", time: "3:45" },
+            { id: 2, name: "Midnight City", artist: "The Midnight", album: "After Hours", color: "#ff8c00", time: "4:12" },
+            { id: 3, name: "Static Pulse", artist: "Oscillator", album: "Signal Noise", color: "#808080", time: "2:58" },
+            { id: 4, name: "Neon Sunset", artist: "Retrowave", album: "Cyber Sunset", color: "#ff0055", time: "3:30" },
+            { id: 5, name: "Quiet Mind", artist: "Study Beats", album: "Deep Focus", color: "#4a90e2", time: "5:10" }
+        ];
+
+        const podcasts = [
+            { name: "The Daily Volt", host: "Sarah Sparks", color: "#333" },
+            { name: "Code & Coffee", host: "Dev Dan", color: "#555" },
+            { name: "Mystery Mix", host: "Urban Legends", color: "#222" }
+        ];
+
+        const genres = [
+            { title: "Pop", color: "#8d67ab" },
+            { title: "Hip-Hop", color: "#ba5d07" },
+            { title: "Electronic", color: "#e8115b" },
+            { title: "Rock", color: "#148a08" },
+            { title: "Jazz", color: "#777777" },
+            { title: "Classical", color: "#503750" },
+            { title: "R&B", color: "#dc148c" },
+            { title: "Indie", color: "#608108" }
+        ];
+
+        // Navigation Logic
+        function navigate(viewId) {
+            // Update links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if(link.innerText.toLowerCase().includes(viewId)) link.classList.add('active');
+            });
+
+            // Update Views
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            const targetView = document.getElementById(`view-${viewId}`);
+            targetView.classList.add('active');
+
+            // Scroll main container to top when changing views
+            document.getElementById('scroll-main').scrollTop = 0;
+
+            // Handle prominent search bar
+            const searchBar = document.getElementById('main-search-bar');
+            const searchInput = document.getElementById('search-input');
+            if(viewId === 'search') {
+                searchBar.classList.add('prominent');
+                searchInput.focus();
+            } else {
+                searchBar.classList.remove('prominent');
+            }
+        }
+
+        // Initialize UI Elements
+        function init() {
+            const albumContainer = document.getElementById('suggested-albums');
+            const podcastContainer = document.getElementById('podcast-list');
+            const trendingContainer = document.getElementById('trending-feed');
+            const genreContainer = document.getElementById('genre-container');
+            const songList = document.getElementById('library-song-list');
+
+            // Render Home Content (Album Cards)
+            songs.forEach(song => {
+                const card = createAlbumCard(song);
+                albumContainer.appendChild(card);
+                trendingContainer.appendChild(card.cloneNode(true));
+            });
+
+            // Render Podcasts
+            podcasts.forEach(pod => {
+                const card = document.createElement('div');
+                card.className = 'podcast-card';
+                card.innerHTML = `
+                    <div class="podcast-img" style="background-color: ${pod.color}"></div>
+                    <div>
+                        <div style="font-weight: 600;">${pod.name}</div>
+                        <div style="color: var(--text-grey); font-size: 0.8rem;">${pod.host}</div>
+                    </div>
+                `;
+                card.onclick = () => updatePlayer(pod.name, pod.host, pod.color);
+                podcastContainer.appendChild(card);
+            });
+
+            // Render Genres
+            genres.forEach(genre => {
+                const card = document.createElement('div');
+                card.className = 'genre-card';
+                card.style.backgroundColor = genre.color;
+                card.innerHTML = `
+                    <h3>${genre.title}</h3>
+                    <svg class="bg-icon" viewBox="0 0 24 24" fill="white"><path d="M12 3V13.55C11.41 13.21 10.73 13 10 13C7.79 13 6 14.79 6 17C6 19.21 7.79 21 10 21C12.21 21 14 19.21 14 17V7H18V3H12Z"/></svg>
+                `;
+                genreContainer.appendChild(card);
+            });
+
+            // Render Library (Liked Songs Table)
+            songs.forEach(song => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--text-grey);">${song.id}</td>
+                    <td>
+                        <div class="track-cell">
+                            <div class="small-art" style="background-color: ${song.color}"></div>
+                            <div>
+                                <div style="font-weight: 500;">${song.name}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-grey);">${song.artist}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color: var(--text-grey);">${song.album}</td>
+                    <td style="text-align: right; color: var(--text-grey);">${song.time}</td>
+                `;
+                tr.onclick = () => updatePlayer(song.name, song.artist, song.color);
+                songList.appendChild(tr);
+            });
+        }
+
+        function createAlbumCard(song) {
+            const card = document.createElement('div');
+            card.className = 'album-card';
+            card.innerHTML = `
+                <div class="album-art" style="background-color: ${song.color}"></div>
+                <div style="font-weight: 600; font-size: 0.9rem;">${song.album}</div>
+                <div style="color: var(--text-grey); font-size: 0.8rem;">${song.artist}</div>
+            `;
+            card.onclick = () => updatePlayer(song.name, song.artist, song.color);
+            return card;
+        }
+
+        function updatePlayer(title, artist, color) {
+            document.getElementById('player-title').innerText = title;
+            document.getElementById('player-artist').innerText = artist;
+            document.getElementById('current-art').style.backgroundColor = color;
+            document.getElementById('master-play').innerText = '⏸';
+        }
+
+        document.getElementById('master-play').onclick = function() {
+            this.innerText = this.innerText === '▶' ? '⏸' : '▶';
+        }
+
+        init();
+    </script>
+</body>
+</html>
